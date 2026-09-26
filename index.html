@@ -149,9 +149,16 @@
                     <div id="sbDemoSub" class="text-xs text-gray-600">Step-by-step guided walkthrough</div>
                 </div>
             </button>
+            <button onclick="resetDataToDefault()" class="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-xl border border-gray-300 transition flex items-center space-x-3">
+                <span class="text-2xl">🔄</span>
+                <div>
+                    <div class="font-bold text-gray-900">Reset Demo Data</div>
+                    <div class="text-xs text-gray-600">Clear all records & reset counts</div>
+                </div>
+            </button>
         </div>
         <div class="p-4 bg-gray-50 border-t text-center text-xs text-gray-500">
-            PlantTrack SFG v2.8 • Secure Station Access
+            PlantTrack SFG v2.9 • Secure Station Access
         </div>
     </aside>
 
@@ -491,14 +498,13 @@
         let currentLang = "en";
 
         // Initial Stock Ledger per plant
-        let plantStock = JSON.parse(localStorage.getItem('plant_stock_sfg')) || {
+        let defaultPlantStock = {
             "Plant 1: Headers": { "Exhaust Header Manifold": 120, "Subassembly Cross Member": 80 },
             "Plant 2: Sheet Metal": { "Chassis Side Rail Panel": 150, "Suspension Bracket Assembly": 100 },
             "Plant 3: Assembly": {}
         };
 
-        // Transfer Records
-        let transfers = JSON.parse(localStorage.getItem('transfers_sfg')) || [
+        let defaultTransfers = [
             {
                 id: "TR-9021",
                 jobOrderId: "JO-98420-BUILD",
@@ -513,6 +519,20 @@
                 timestamp: new Date(Date.now() - 3600000).toLocaleTimeString()
             }
         ];
+
+        let plantStock = JSON.parse(localStorage.getItem('plant_stock_sfg')) || JSON.parse(JSON.stringify(defaultPlantStock));
+        let transfers = JSON.parse(localStorage.getItem('transfers_sfg')) || JSON.parse(JSON.stringify(defaultTransfers));
+
+        function resetDataToDefault() {
+            localStorage.removeItem('plant_stock_sfg');
+            localStorage.removeItem('transfers_sfg');
+            plantStock = JSON.parse(JSON.stringify(defaultPlantStock));
+            transfers = JSON.parse(JSON.stringify(defaultTransfers));
+            toggleSidebar();
+            showNotification("Data Reset Complete!", "All counts and ledger entries have been reset to default.");
+            renderDashboard();
+            updatePartOptionsForJob();
+        }
 
         // --- Translations ---
         const translations = {
@@ -584,11 +604,11 @@
                 lblTransport: "ٹرانسپورٹر / فورک لفٹ ID:",
                 txtSubmitDispatch: "تصدیق کریں और پارٹس روانہ کریں",
                 receiveHeading: "📥 आने वाली ترسیلات (وصولی پورٹل)",
-                receiveSub: "अपने प्लांट पर पहुंचने वाली खेप کا معائنہ کریں اور رسید की تصدیق करें।",
+                receiveSub: "अपने प्लांट पर पहुंचने वाली खेप का معائنہ کریں और رسید की تصدیق करें।",
                 targetsHeading: "🎯 جاب آرڈر روٹنگ کوٹہ और تکمیل",
-                targetsSub: "درست روٹنگ के اہداف، بھیجی گئی پیشرفت और تکمیل की حیثیت کو ٹریک کریں۔",
+                targetsSub: "درست روٹنگ के اہداف، भीجی गई پیشرفت और تکمیل की حیثیت کو ٹریک کریں۔",
                 historyHeading: "📜 ٹرانسفر آڈٹ ٹریل اور ہسٹری",
-                historySub: "تمام ترسیلات और رسیدوں का مکمل ریکارڈ۔",
+                historySub: "تمام ترسیلات और رسیدوں کا مکمل ریکارڈ۔",
                 txtExportCSV: "CSV رپورٹ برآمد करें"
             }
         };
@@ -597,9 +617,6 @@
         function handleLogin(e) {
             e.preventDefault();
             const plant = document.getElementById('loginPlantSelect').value;
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-
             currentPlant = plant;
             document.getElementById('sendFromPlant').value = plant;
             document.getElementById('activePlantBadgeText').innerText = plant;
@@ -615,17 +632,11 @@
             document.getElementById('loginScreen').classList.remove('hidden');
         }
 
-        // --- Initialization on Load ---
-        window.onload = function() {
-            // Keep login screen visible initially
-        };
-
         function switchTab(tab) {
             ['send', 'receive', 'targets', 'history'].forEach(t => {
                 document.getElementById(`content${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
                 document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className = "flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2";
             });
-            // Re-apply absolute positioning for receive tab badge if it was overwritten
             document.getElementById('tabReceive').className = "relative flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2";
 
             document.getElementById(`content${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.remove('hidden');
@@ -649,7 +660,6 @@
             document.getElementById(id).classList.add('hidden');
         }
 
-        // --- Audio Notification Sound ---
         function playBeep(success = true) {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -682,7 +692,6 @@
             document.getElementById('notificationBanner').classList.add('hidden');
         }
 
-        // --- Populate Job Orders & Parts ---
         function populateJobOrdersDropdown() {
             const select = document.getElementById('sendJobOrderId');
             select.innerHTML = '';
@@ -742,7 +751,6 @@
             input.value = val;
         }
 
-        // --- Handle Dispatch Send ---
         function handleSendSubmit(e) {
             e.preventDefault();
             const jobId = document.getElementById('sendJobOrderId').value;
@@ -787,7 +795,6 @@
             switchTab('receive');
         }
 
-        // --- Handle Receipt Confirm ---
         function confirmReceipt(id, discrepancy = false) {
             const tr = transfers.find(t => t.id === id);
             if (!tr) return;
@@ -805,7 +812,6 @@
             renderDashboard();
         }
 
-        // --- Render Dashboard UI ---
         function renderDashboard() {
             const pendingTransfers = transfers.filter(t => t.receivingPlant === currentPlant && t.status === "IN_TRANSIT");
             const pendingCount = pendingTransfers.length;
@@ -817,7 +823,6 @@
             document.getElementById('statIssues').innerText = issueCount;
             document.getElementById('statTotal').innerText = transfers.length;
 
-            // Update Receive Tab Notification Badge Bubble
             const badgeBubble = document.getElementById('receiveBadgeBubble');
             if (pendingCount > 0) {
                 badgeBubble.innerText = pendingCount;
@@ -871,7 +876,6 @@
             renderHistoryTable();
         }
 
-        // --- Render Job Targets with Stage Status Summary ---
         function renderJobTargets() {
             const container = document.getElementById('jobTargetsList');
             container.innerHTML = '';
@@ -926,7 +930,6 @@
                     `;
                 });
 
-                // Status Summary Banner per Job Order
                 let summaryBoxHtml = '';
                 if (hasDiscrepancy) {
                     summaryBoxHtml = `
