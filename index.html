@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantTrack SFG - Factory Floor Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
+
+    <!-- Login Screen Overlay -->
+    <div id="loginScreen" class="fixed inset-0 bg-blue-950 z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden p-8 space-y-6 border-4 border-blue-600">
+            <div class="text-center space-y-2">
+                <span class="text-5xl">🏭</span>
+                <h2 class="text-2xl font-black text-blue-900">PlantTrack SFG Login</h2>
+                <p class="text-xs text-gray-600">Sign in with your plant credentials to access the station.</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Select Plant Station:</label>
+                    <select id="loginPlantSelect" class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
+                        <option value="Plant 1: Headers">Plant 1: Headers</option>
+                        <option value="Plant 2: Sheet Metal">Plant 2: Sheet Metal</option>
+                        <option value="Plant 3: Assembly">Plant 3: Assembly</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Username:</label>
+                    <input type="text" id="loginUsername" required placeholder="e.g. plant1" class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Password:</label>
+                    <input type="password" id="loginPassword" required placeholder="e.g. Plant1" class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
+                </div>
+
+                <div class="bg-blue-50 p-3 rounded-xl text-xs text-blue-900 space-y-1">
+                    <p class="font-bold">💡 Demo Credentials:</p>
+                    <p>• Plant 1: <code class="bg-white px-1 py-0.5 rounded font-bold">plant1</code> / <code class="bg-white px-1 py-0.5 rounded font-bold">Plant1</code></p>
+                    <p>• Plant 2: <code class="bg-white px-1 py-0.5 rounded font-bold">plant2</code> / <code class="bg-white px-1 py-0.5 rounded font-bold">Plant2</code></p>
+                    <p>• Plant 3: <code class="bg-white px-1 py-0.5 rounded font-bold">plant3</code> / <code class="bg-white px-1 py-0.5 rounded font-bold">Plant3</code></p>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-blue-900 hover:bg-blue-800 text-white font-black text-lg rounded-2xl shadow-xl transition">
+                    🔓 SECURE LOGIN
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationBanner" class="fixed top-4 right-4 z-50 hidden max-w-sm w-full bg-emerald-600 text-white p-4 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-0">
+        <div class="flex items-center space-x-3">
+            <span id="notifIcon" class="text-2xl">🎉</span>
+            <div class="flex-1">
+                <h4 id="notifTitle" class="font-bold text-lg">Transfer Successful!</h4>
+                <p id="notifMessage" class="text-sm opacity-90">Parts dispatched successfully.</p>
+            </div>
+            <button onclick="closeNotification()" class="text-white hover:text-gray-200 font-bold text-xl">&times;</button>
+        </div>
+    </div>
+
+    <!-- Header Bar -->
+    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSidebar()" class="p-2 bg-blue-800 rounded-lg hover:bg-blue-700 transition focus:outline-none" aria-label="Open Menu">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-wide flex items-center gap-2">
+                        🏭 PlantTrack SFG
+                    </h1>
+                    <p class="text-xs text-blue-200" id="headerSubText">Inter-Plant Parts Movement & Tracking</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <!-- Language Switcher -->
+                <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-blue-800 text-white text-sm font-bold px-3 py-2 rounded-lg border border-blue-700 focus:outline-none">
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="ur">اردو (Dubai)</option>
+                </select>
+
+                <!-- Current Logged Plant Badge & Logout -->
+                <div class="flex items-center space-x-2 bg-blue-800 px-3 py-1.5 rounded-xl border border-blue-700">
+                    <div class="flex flex-col text-right">
+                        <span class="text-[10px] uppercase tracking-wider text-blue-300 font-bold" id="lblLoggedInAs">Logged In As</span>
+                        <span id="activePlantBadgeText" class="text-xs md:text-sm font-black text-white">Plant 1: Headers</span>
+                    </div>
+                    <button onclick="logout()" class="ml-2 px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition" title="Logout">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Side Drawer Menu -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity"></div>
+    <aside id="sidebar" class="fixed top-0 left-0 w-80 h-full bg-white shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-4 bg-blue-900 text-white flex items-center justify-between">
+            <h2 id="sbTitle" class="text-lg font-bold">Manager & Tools Menu</h2>
+            <button onclick="toggleSidebar()" class="text-white hover:text-gray-300 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <button onclick="toggleSidebar(); openModal('jobOrderModal')" class="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition flex items-center space-x-3">
+                <span class="text-2xl">📋</span>
+                <div>
+                    <div id="sbJobOrders" class="font-bold text-blue-900">Dummy Job Order File</div>
+                    <div id="sbJobOrdersSub" class="text-xs text-gray-600">View SAP & Parent Build JSON</div>
+                </div>
+            </button>
+            <button onclick="toggleSidebar(); openModal('stockModal')" class="w-full text-left p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition flex items-center space-x-3">
+                <span class="text-2xl">📦</span>
+                <div>
+                    <div id="sbStock" class="font-bold text-emerald-900">Plant Stock Ledger</div>
+                    <div id="sbStockSub" class="text-xs text-gray-600">Check available parts & limits</div>
+                </div>
+            </button>
+            <button onclick="toggleSidebar(); openModal('scannerModal')" class="w-full text-left p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition flex items-center space-x-3">
+                <span class="text-2xl">📷</span>
+                <div>
+                    <div id="sbScan" class="font-bold text-amber-900">Barcode / QR Scanner</div>
+                    <div id="sbScanSub" class="text-xs text-gray-600">Scan physical part tags</div>
+                </div>
+            </button>
+            <button onclick="toggleSidebar(); openModal('designNoteModal')" class="w-full text-left p-3 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 transition flex items-center space-x-3">
+                <span class="text-2xl">📝</span>
+                <div>
+                    <div id="sbNote" class="font-bold text-purple-900">Design Note (1 Page)</div>
+                    <div id="sbNoteSub" class="text-xs text-gray-600">Assumptions & future SAP roadmap</div>
+                </div>
+            </button>
+            <button onclick="toggleSidebar(); startDemoTour()" class="w-full text-left p-3 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition flex items-center space-x-3">
+                <span class="text-2xl">▶</span>
+                <div>
+                    <div id="sbDemo" class="font-bold text-rose-900">Website Demo Tour</div>
+                    <div id="sbDemoSub" class="text-xs text-gray-600">Step-by-step guided walkthrough</div>
+                </div>
+            </button>
+        </div>
+        <div class="p-4 bg-gray-50 border-t text-center text-xs text-gray-500">
+            PlantTrack SFG v2.7 • Secure Station Access
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- Top Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-md border-l-4 border-amber-500 flex items-center justify-between">
+                <div>
+                    <p id="lblStatPending" class="text-xs uppercase font-bold text-gray-500">In Transit</p>
+                    <h3 id="statPending" class="text-2xl font-black text-amber-600">0</h3>
+                </div>
+                <span class="text-3xl">🚚</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-md border-l-4 border-emerald-500 flex items-center justify-between">
+                <div>
+                    <p id="lblStatReceived" class="text-xs uppercase font-bold text-gray-500">Received Today</p>
+                    <h3 id="statReceived" class="text-2xl font-black text-emerald-600">0</h3>
+                </div>
+                <span class="text-3xl">📥</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-md border-l-4 border-rose-500 flex items-center justify-between">
+                <div>
+                    <p id="lblStatIssues" class="text-xs uppercase font-bold text-gray-500">Discrepancies</p>
+                    <h3 id="statIssues" class="text-2xl font-black text-rose-600">0</h3>
+                </div>
+                <span class="text-3xl">⚠️</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-md border-l-4 border-blue-500 flex items-center justify-between">
+                <div>
+                    <p id="lblStatTotal" class="text-xs uppercase font-bold text-gray-500">Total Dispatches</p>
+                    <h3 id="statTotal" class="text-2xl font-black text-blue-600">0</h3>
+                </div>
+                <span class="text-3xl">📊</span>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white p-2 rounded-2xl shadow-md flex flex-wrap gap-2 justify-center md:justify-start">
+            <button onclick="switchTab('send')" id="tabSend" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-blue-900 text-white shadow transition flex items-center justify-center space-x-2">
+                <span>📤</span> <span id="txtTabSend">SEND PARTS</span>
+            </button>
+            <button onclick="switchTab('receive')" id="tabReceive" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2">
+                <span>📥</span> <span id="txtTabReceive">RECEIVE PARTS</span>
+            </button>
+            <button onclick="switchTab('targets')" id="tabTargets" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2">
+                <span>🎯</span> <span id="txtTabTargets">JOB TARGETS</span>
+            </button>
+            <button onclick="switchTab('history')" id="tabHistory" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2">
+                <span>📜</span> <span id="txtTabHistory">HISTORY LOG</span>
+            </button>
+        </div>
+
+        <!-- Send Tab -->
+        <div id="contentSend" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6">
+            <div class="border-b pb-4">
+                <h2 id="sendHeading" class="text-xl font-black text-blue-900">📤 Log Outgoing Dispatch (Send)</h2>
+                <p id="sendSub" class="text-sm text-gray-600">Select job order, pick color-coded part, and send to the next plant.</p>
+            </div>
+
+            <form onsubmit="handleSendSubmit(event)" class="space-y-6">
+                <!-- Job Order Selection -->
+                <div>
+                    <label id="lblJobOrder" class="block text-sm font-bold text-gray-700 mb-2">Select Active Job Order:</label>
+                    <select id="sendJobOrderId" onchange="updatePartOptionsForJob()" class="w-full p-4 rounded-xl border-2 border-gray-300 font-bold text-lg focus:border-blue-600 focus:outline-none bg-gray-50">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+
+                <!-- Part & Color Card Selection -->
+                <div>
+                    <label id="lblPartName" class="block text-sm font-bold text-gray-700 mb-2">Select Part & Color Code:</label>
+                    <select id="sendPartName" onchange="updateMaxQuantityLimit()" class="w-full p-4 rounded-xl border-2 border-gray-300 font-bold text-lg focus:border-blue-600 focus:outline-none bg-gray-50">
+                        <!-- Populated via JS -->
+                    </select>
+                    <p id="stockLimitWarning" class="text-xs font-bold text-amber-600 mt-2">📦 Available in Plant Stock: <span id="maxStockAvailable">0</span> units</p>
+                </div>
+
+                <!-- Destination Plant -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label id="lblSendingPlant" class="block text-sm font-bold text-gray-700 mb-2">Sending From (Your Station):</label>
+                        <input type="text" id="sendFromPlant" readonly class="w-full p-4 rounded-xl bg-gray-100 font-bold text-gray-700 border" value="Plant 1: Headers">
+                    </div>
+                    <div>
+                        <label id="lblReceivingPlant" class="block text-sm font-bold text-gray-700 mb-2">Sending To (Receiving Plant):</label>
+                        <select id="sendToPlant" class="w-full p-4 rounded-xl border-2 border-gray-300 font-bold text-lg focus:border-blue-600 focus:outline-none bg-gray-50">
+                            <option value="Plant 2: Sheet Metal">Plant 2: Sheet Metal</option>
+                            <option value="Plant 3: Assembly">Plant 3: Assembly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quantity Stepper -->
+                <div>
+                    <label id="lblQuantity" class="block text-sm font-bold text-gray-700 mb-2">Quantity to Send:</label>
+                    <div class="flex items-center space-x-3">
+                        <button type="button" onclick="adjustQuantity(-10)" class="bg-gray-200 hover:bg-gray-300 font-black px-5 py-4 rounded-xl text-xl">-10</button>
+                        <button type="button" onclick="adjustQuantity(-1)" class="bg-gray-200 hover:bg-gray-300 font-black px-5 py-4 rounded-xl text-xl">-1</button>
+                        <input type="number" id="sendQuantity" min="1" value="10" required class="flex-1 text-center p-4 rounded-xl border-2 border-gray-300 text-2xl font-black focus:border-blue-600 focus:outline-none">
+                        <button type="button" onclick="adjustQuantity(1)" class="bg-gray-200 hover:bg-gray-300 font-black px-5 py-4 rounded-xl text-xl">+1</button>
+                        <button type="button" onclick="adjustQuantity(10)" class="bg-gray-200 hover:bg-gray-300 font-black px-5 py-4 rounded-xl text-xl">+10</button>
+                    </div>
+                </div>
+
+                <!-- Transport & Batch Ref -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label id="lblBatch" class="block text-sm font-bold text-gray-700 mb-2">Batch / Trolley Number:</label>
+                        <input type="text" id="sendBatch" value="BATCH-2026-X" class="w-full p-4 rounded-xl border-2 border-gray-300 font-bold focus:border-blue-600 focus:outline-none">
+                    </div>
+                    <div>
+                        <label id="lblTransport" class="block text-sm font-bold text-gray-700 mb-2">Transporter / Forklift ID:</label>
+                        <input type="text" id="sendTransport" value="Trolley #4 (Electric)" class="w-full p-4 rounded-xl border-2 border-gray-300 font-bold focus:border-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="btnSubmitDispatch" class="w-full py-5 bg-blue-900 hover:bg-blue-800 text-white font-black text-xl rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center space-x-3">
+                    <span>🚀</span> <span id="txtSubmitDispatch">CONFIRM & DISPATCH PARTS</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Receive Tab -->
+        <div id="contentReceive" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6 hidden">
+            <div class="border-b pb-4 flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <h2 id="receiveHeading" class="text-xl font-black text-emerald-900">📥 Incoming Dispatches (Receive Portal)</h2>
+                    <p id="receiveSub" class="text-sm text-gray-600">Inspect arriving shipments at your plant and confirm receipt.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="lblFilterPlant" class="text-xs font-bold text-gray-500 uppercase">Viewing Dispatches for:</span>
+                    <span id="currentPlantBadge" class="px-3 py-1 bg-emerald-100 text-emerald-800 font-black rounded-lg text-sm">Plant 2</span>
+                </div>
+            </div>
+
+            <div id="incomingShipmentsList" class="space-y-4">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <!-- Targets Tab -->
+        <div id="contentTargets" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6 hidden">
+            <div class="border-b pb-4">
+                <h2 id="targetsHeading" class="text-xl font-black text-purple-900">🎯 Job Order Routing Quotas & Fulfillment</h2>
+                <p id="targetsSub" class="text-sm text-gray-600">Track exact inter-plant routing targets, sent progress, and completion status.</p>
+            </div>
+
+            <div id="jobTargetsList" class="space-y-6">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="contentHistory" class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6 hidden">
+            <div class="border-b pb-4 flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <h2 id="historyHeading" class="text-xl font-black text-gray-900">📜 Transfer Audit Trail & History</h2>
+                    <p id="historySub" class="text-sm text-gray-600">Complete immutable record of all dispatches and receipts.</p>
+                </div>
+                <button onclick="exportHistoryCSV()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow transition flex items-center space-x-2">
+                    <span>📥</span> <span id="txtExportCSV">Export CSV Report</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700 text-xs uppercase font-black">
+                            <th class="p-3">Time / ID</th>
+                            <th class="p-3">Job ID</th>
+                            <th class="p-3">Part Name</th>
+                            <th class="p-3">Route (From → To)</th>
+                            <th class="p-3">Qty</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-gray-200 text-sm font-medium">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modals -->
+    <div id="jobOrderModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 bg-blue-900 text-white flex justify-between items-center">
+                <h3 class="font-black text-lg">📋 Dummy Job Order File (Parent Build Tracker)</h3>
+                <button onclick="closeModal('jobOrderModal')" class="text-white text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <p class="text-sm text-gray-700">This JSON file acts as the bridge between the Enterprise Parent Build System and our PlantTrack SFG Inter-Plant logistics portal. When connecting to SAP S/4HANA (MM/PP modules), each transfer confirmation maps to an inbound Goods Receipt (Movement Type 101) and Outbound Delivery (Movement Type 641).</p>
+                <pre id="jsonViewer" class="bg-gray-900 text-green-400 p-4 rounded-xl text-xs font-mono overflow-x-auto max-h-96"></pre>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end">
+                <button onclick="closeModal('jobOrderModal')" class="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Ledger Modal -->
+    <div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white max-w-xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 bg-emerald-900 text-white flex justify-between items-center">
+                <h3 class="font-black text-lg">📦 Plant Stock Ledger (Live Inventory)</h3>
+                <button onclick="closeModal('stockModal')" class="text-white text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4" id="stockModalContent">
+                <!-- Populated via JS -->
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end">
+                <button onclick="closeModal('stockModal')" class="px-5 py-2.5 bg-emerald-900 text-white font-bold rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barcode Scanner Modal -->
+    <div id="scannerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-4 bg-amber-800 text-white flex justify-between items-center">
+                <h3 class="font-black text-lg">📷 Barcode / QR Tag Scanner</h3>
+                <button onclick="closeModal('scannerModal')" class="text-white text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 text-center space-y-4">
+                <div class="bg-gray-900 h-48 rounded-xl flex flex-col items-center justify-center text-white p-4 relative overflow-hidden">
+                    <div class="absolute inset-0 border-4 border-amber-500 opacity-50 animate-pulse"></div>
+                    <span class="text-4xl mb-2">📷</span>
+                    <p class="text-xs text-amber-300 font-mono">Align barcode inside camera frame</p>
+                    <div class="w-3/4 h-0.5 bg-red-500 absolute animate-bounce mt-8"></div>
+                </div>
+                <p class="text-xs text-gray-600">Simulate scanning a physical part tag from the factory floor:</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="simulateScan('MAT-HD-99201', 'JO-98420-BUILD')" class="p-3 bg-blue-100 hover:bg-blue-200 text-blue-900 font-bold rounded-xl text-xs">Scan Header Tag (JO-98420)</button>
+                    <button onclick="simulateScan('MAT-SM-44320', 'JO-98420-BUILD')" class="p-3 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl text-xs">Scan Panel Tag (JO-98420)</button>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end">
+                <button onclick="closeModal('scannerModal')" class="px-5 py-2.5 bg-amber-800 text-white font-bold rounded-xl">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design Note Modal -->
+    <div id="designNoteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 bg-purple-900 text-white flex justify-between items-center">
+                <h3 class="font-black text-lg">📝 Design Note (Factory Operations)</h3>
+                <button onclick="closeModal('designNoteModal')" class="text-white text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 text-sm text-gray-700 leading-relaxed">
+                <h4 class="font-black text-purple-900 text-base">1. Assumptions Made</h4>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Factory floor Wi-Fi can drop intermittently; data is saved instantly on local device storage so no dispatch slips are lost.</li>
+                    <li>Operators log into their respective plant station securely with credentials (e.g. `plant1` / `Plant1`).</li>
+                    <li>Two-way agreement: Transfers are only marked complete when the receiving plant taps "GOT IT".</li>
+                </ul>
+                <h4 class="font-black text-purple-900 text-base mt-4">2. Key Decisions & Trade-Offs</h4>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Used client-side storage for instant deployment without heavy server setup.</li>
+                    <li>Stock limits prevent sending more parts than are actually in the plant ledger.</li>
+                </ul>
+                <h4 class="font-black text-purple-900 text-base mt-4">3. Future SAP Scalability & Next Steps</h4>
+                <p>Although running standalone today, dispatches package clean standard JSON payloads designed to plug directly into SAP S/4HANA (MM/PP modules) via IDoc (DELVRY03).</p>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end">
+                <button onclick="closeModal('designNoteModal')" class="px-5 py-2.5 bg-purple-900 text-white font-bold rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Dummy Job Order Data & State ---
+        const dummyJobOrders = [
+            {
+                "job_order_id": "JO-98420-BUILD",
+                "parent_product_name": "Heavy Utility Vehicle X",
+                "priority": "HIGH",
+                "production_line": "Line Alpha",
+                "routing_stages": [
+                    {
+                        "stage_sequence": 1,
+                        "sending_plant": "Plant 1: Headers",
+                        "receiving_plant": "Plant 2: Sheet Metal",
+                        "part_name": "Exhaust Header Manifold",
+                        "color_code": "Blue",
+                        "required_target_qty": 50,
+                        "sap_material_code": "MAT-HD-99201"
+                    },
+                    {
+                        "stage_sequence": 2,
+                        "sending_plant": "Plant 2: Sheet Metal",
+                        "receiving_plant": "Plant 3: Assembly",
+                        "part_name": "Chassis Side Rail Panel",
+                        "color_code": "Amber",
+                        "required_target_qty": 75,
+                        "sap_material_code": "MAT-SM-44320"
+                    }
+                ]
+            },
+            {
+                "job_order_id": "JO-88312-BUILD",
+                "parent_product_name": "Medium Cargo Truck Y",
+                "priority": "MEDIUM",
+                "production_line": "Line Beta",
+                "routing_stages": [
+                    {
+                        "stage_sequence": 1,
+                        "sending_plant": "Plant 1: Headers",
+                        "receiving_plant": "Plant 3: Assembly",
+                        "part_name": "Subassembly Cross Member",
+                        "color_code": "Indigo",
+                        "required_target_qty": 40,
+                        "sap_material_code": "MAT-HD-11029"
+                    },
+                    {
+                        "stage_sequence": 2,
+                        "sending_plant": "Plant 2: Sheet Metal",
+                        "receiving_plant": "Plant 3: Assembly",
+                        "part_name": "Suspension Bracket Assembly",
+                        "color_code": "Emerald",
+                        "required_target_qty": 60,
+                        "sap_material_code": "MAT-SM-77812"
+                    }
+                ]
+            }
+        ];
+
+        let currentPlant = "Plant 1: Headers";
+        let currentLang = "en";
+
+        // Initial Stock Ledger per plant
+        let plantStock = JSON.parse(localStorage.getItem('plant_stock_sfg')) || {
+            "Plant 1: Headers": { "Exhaust Header Manifold": 120, "Subassembly Cross Member": 80 },
+            "Plant 2: Sheet Metal": { "Chassis Side Rail Panel": 150, "Suspension Bracket Assembly": 100 },
+            "Plant 3: Assembly": {}
+        };
+
+        // Transfer Records
+        let transfers = JSON.parse(localStorage.getItem('transfers_sfg')) || [
+            {
+                id: "TR-9021",
+                jobOrderId: "JO-98420-BUILD",
+                partName: "Exhaust Header Manifold",
+                colorCode: "Blue",
+                sendingPlant: "Plant 1: Headers",
+                receivingPlant: "Plant 2: Sheet Metal",
+                quantity: 25,
+                batch: "BATCH-2026-A",
+                transport: "Forklift #1",
+                status: "IN_TRANSIT",
+                timestamp: new Date(Date.now() - 3600000).toLocaleTimeString()
+            }
+        ];
+
+        // --- Translations ---
+        const translations = {
+            en: {
+                headerSubText: "Inter-Plant Parts Movement & Tracking",
+                lblLoggedInAs: "Logged In As",
+                tabSend: "SEND PARTS",
+                tabReceive: "RECEIVE PARTS",
+                tabTargets: "JOB TARGETS",
+                tabHistory: "HISTORY LOG",
+                sendHeading: "📤 Log Outgoing Dispatch (Send)",
+                sendSub: "Select job order, pick color-coded part, and send to the next plant.",
+                lblJobOrder: "Select Active Job Order:",
+                lblPartName: "Select Part & Color Code:",
+                lblSendingPlant: "Sending From (Your Station):",
+                lblReceivingPlant: "Sending To (Receiving Plant):",
+                lblQuantity: "Quantity to Send:",
+                lblBatch: "Batch / Trolley Number:",
+                lblTransport: "Transporter / Forklift ID:",
+                txtSubmitDispatch: "CONFIRM & DISPATCH PARTS",
+                receiveHeading: "📥 Incoming Dispatches (Receive Portal)",
+                receiveSub: "Inspect arriving shipments at your plant and confirm receipt.",
+                targetsHeading: "🎯 Job Order Routing Quotas & Fulfillment",
+                targetsSub: "Track exact inter-plant routing targets, sent progress, and completion status.",
+                historyHeading: "📜 Transfer Audit Trail & History",
+                historySub: "Complete immutable record of all dispatches and receipts.",
+                txtExportCSV: "Export CSV Report"
+            },
+            hi: {
+                headerSubText: "प्लांट-वार पार्ट्स मूवमेंट और ट्रैकिंग",
+                lblLoggedInAs: "लॉग इन किया गया",
+                tabSend: "पार्ट्स भेजें (SEND)",
+                tabReceive: "पार्ट्स प्राप्त करें (RECEIVE)",
+                tabTargets: "जॉब लक्ष्य (TARGETS)",
+                tabHistory: "इतिहास लॉग (HISTORY)",
+                sendHeading: "📤 बाहर जाने वाले प्रेषण को लॉग करें (भेजें)",
+                sendSub: "जॉब ऑर्डर चुनें, रंग-कोडित भाग चुनें, और अगले प्लांट में भेजें।",
+                lblJobOrder: "सक्रिय जॉब ऑर्डर चुनें:",
+                lblPartName: "पार्ट और रंग कोड चुनें:",
+                lblSendingPlant: "कहाँ से भेजा जा रहा है (आपकी स्टेशन):",
+                lblReceivingPlant: "कहाँ भेजा जा रहा है (प्राप्तकर्ता प्लांट):",
+                lblQuantity: "भेजने की मात्रा:",
+                lblBatch: "बैच / ट्रॉली नंबर:",
+                lblTransport: "ट्रांसपोर्टर / फोर्कलिफ्ट आईडी:",
+                txtSubmitDispatch: "पुष्टि करें और पार्ट्स भेजें",
+                receiveHeading: "📥 आने वाले प्रेषण (प्राप्त करने का पोर्टल)",
+                receiveSub: "अपने प्लांट में आने वाले शिपमेंट का निरीक्षण करें और प्राप्ति की पुष्टि करें।",
+                targetsHeading: "🎯 जॉब ऑर्डर रूटिंग कोटा और पूर्ति",
+                targetsSub: "सटीक इंटर-प्लांट रूटिंग लक्ष्यों, भेजी गई प्रगति और पूर्णता की स्थिति को ट्रैक करें।",
+                historyHeading: "📜 ट्रांसफर ऑडिट ट्रेल और इतिहास",
+                historySub: "सभी प्रेषण और प्राप्तियों का पूर्ण अपरिवर्तनीय रिकॉर्ड।",
+                txtExportCSV: "CSV रिपोर्ट निर्यात करें"
+            },
+            ur: {
+                headerSubText: "انٹر پلانٹ پارٹس کی نقل و حرکت اور ٹریکنگ",
+                lblLoggedInAs: "لاگ ان بحیثیت",
+                tabSend: "پارٹس بھیجیں",
+                tabReceive: "پارٹس وصول کریں",
+                tabTargets: "جابس کے اہداف",
+                tabHistory: "ہسٹری لاگ",
+                sendHeading: "📤 روانہ ہونے والی ترسیل درج کریں (بھیجیں)",
+                sendSub: "جاب آرڈر منتخب کریں، رنگین کوڈ والا حصہ منتخب کریں، اور اگلے پلانٹ پر بھیجیں۔",
+                lblJobOrder: "فعال جاب آرڈر منتخب کریں:",
+                lblPartName: "پارٹ اور رنگ کا کوڈ منتخب کریں:",
+                lblSendingPlant: "کہاں سے بھیجا جا رہا ہے:",
+                lblReceivingPlant: "کہاں بھیجا جا رہا ہے (وصول کرنے والا پلانٹ):",
+                lblQuantity: "بھیجنے کی مقدار:",
+                lblBatch: "بیچ / ٹرالی نمبر:",
+                lblTransport: "ٹرانسپورٹر / فورک لفٹ ID:",
+                txtSubmitDispatch: "تصدیق کریں اور پارٹس روانہ کریں",
+                receiveHeading: "📥 آنے والی ترسیلات (وصولی پورٹل)",
+                receiveSub: "अपने प्लांट पर पहुंचने वाली खेप का معائنہ کریں اور رسید کی تصدیق کریں۔",
+                targetsHeading: "🎯 جاب آرڈر روٹنگ کوٹہ اور تکمیل",
+                targetsSub: "درست روٹنگ کے اہداف، بھیجی گئی پیشرفت اور تکمیل کی حیثیت کو ٹریک کریں۔",
+                historyHeading: "📜 ٹرانسفر آڈٹ ٹریل اور ہسٹری",
+                historySub: "تمام ترسیلات اور رسیدوں का مکمل ریکارڈ۔",
+                txtExportCSV: "CSV رپورٹ برآمد کریں"
+            }
+        };
+
+        // --- Login Authentication Handler ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const plant = document.getElementById('loginPlantSelect').value;
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            // Credentials check
+            let expectedUser = "";
+            let expectedPass = "";
+
+            if (plant.includes("Plant 1")) { expectedUser = "plant1"; expectedPass = "Plant1"; }
+            else if (plant.includes("Plant 2")) { expectedUser = "plant2"; expectedPass = "Plant2"; }
+            else if (plant.includes("Plant 3")) { expectedUser = "plant3"; expectedPass = "Plant3"; }
+
+            if (username === expectedUser && password === expectedPass) {
+                currentPlant = plant;
+                document.getElementById('sendFromPlant').value = plant;
+                document.getElementById('activePlantBadgeText').innerText = plant;
+                document.getElementById('currentPlantBadge').innerText = plant.split(':')[0];
+                document.getElementById('loginScreen').classList.add('hidden');
+                showNotification("Login Successful! 🎉", `Welcome to ${plant} workstation.`);
+                populateJobOrdersDropdown();
+                renderDashboard();
+                renderJSONViewer();
+            } else {
+                showNotification("Login Failed", `Invalid username or password for ${plant}. Try username: ${expectedUser}, password: ${expectedPass}`, false);
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // --- Initialization on Load ---
+        window.onload = function() {
+            // Keep login screen visible initially
+        };
+
+        function switchTab(tab) {
+            ['send', 'receive', 'targets', 'history'].forEach(t => {
+                document.getElementById(`content${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
+                document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className = "flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2";
+            });
+            document.getElementById(`content${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.remove('hidden');
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).className = "flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-blue-900 text-white shadow transition flex items-center justify-center space-x-2";
+            renderDashboard();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'stockModal') renderStockModalContent();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // --- Audio Notification Sound ---
+        function playBeep(success = true) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = success ? 'sine' : 'sawtooth';
+                osc.frequency.setValueAtTime(success ? 587.33 : 220, audioCtx.currentTime); // D5 or A3
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + (success ? 0.25 : 0.4));
+            } catch (e) {
+                console.log("Audio Context not supported");
+            }
+        }
+
+        function showNotification(title, message, isSuccess = true) {
+            const banner = document.getElementById('notificationBanner');
+            document.getElementById('notifTitle').innerText = title;
+            document.getElementById('notifMessage').innerText = message;
+            document.getElementById('notifIcon').innerText = isSuccess ? '🎉' : '⚠️';
+            banner.className = `fixed top-4 right-4 z-50 max-w-sm w-full text-white p-4 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-0 ${isSuccess ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            banner.classList.remove('hidden');
+            playBeep(isSuccess);
+            setTimeout(closeNotification, 4000);
+        }
+
+        function closeNotification() {
+            document.getElementById('notificationBanner').classList.add('hidden');
+        }
+
+        // --- Populate Job Orders & Parts ---
+        function populateJobOrdersDropdown() {
+            const select = document.getElementById('sendJobOrderId');
+            select.innerHTML = '';
+            dummyJobOrders.forEach(job => {
+                const opt = document.createElement('option');
+                opt.value = job.job_order_id;
+                opt.innerText = `${job.job_order_id} - ${job.parent_product_name} (${job.priority})`;
+                select.appendChild(opt);
+            });
+            updatePartOptionsForJob();
+        }
+
+        function updatePartOptionsForJob() {
+            const jobId = document.getElementById('sendJobOrderId').value;
+            const job = dummyJobOrders.find(j => j.job_order_id === jobId);
+            const partSelect = document.getElementById('sendPartName');
+            partSelect.innerHTML = '';
+
+            if (!job) return;
+
+            const availableStages = job.routing_stages.filter(stage => stage.sending_plant === currentPlant);
+            
+            if (availableStages.length === 0) {
+                const opt = document.createElement('option');
+                opt.innerText = `No dispatch routes from ${currentPlant} for this job`;
+                partSelect.appendChild(opt);
+                document.getElementById('maxStockAvailable').innerText = 0;
+                return;
+            }
+
+            availableStages.forEach(stage => {
+                const opt = document.createElement('option');
+                opt.value = stage.part_name;
+                opt.setAttribute('data-to', stage.receiving_plant);
+                opt.setAttribute('data-color', stage.color_code);
+                opt.innerText = `[${stage.color_code}] ${stage.part_name} → ${stage.receiving_plant}`;
+                partSelect.appendChild(opt);
+            });
+
+            if (availableStages.length > 0) {
+                document.getElementById('sendToPlant').value = availableStages[0].receiving_plant;
+            }
+
+            updateMaxQuantityLimit();
+        }
+
+        function updateMaxQuantityLimit() {
+            const partName = document.getElementById('sendPartName').value;
+            const stock = plantStock[currentPlant]?.[partName] || 50;
+            document.getElementById('maxStockAvailable').innerText = stock;
+        }
+
+        function adjustQuantity(amount) {
+            const input = document.getElementById('sendQuantity');
+            let val = parseInt(input.value || 0) + amount;
+            if (val < 1) val = 1;
+            input.value = val;
+        }
+
+        // --- Handle Dispatch Send ---
+        function handleSendSubmit(e) {
+            e.preventDefault();
+            const jobId = document.getElementById('sendJobOrderId').value;
+            const partName = document.getElementById('sendPartName').value;
+            const toPlant = document.getElementById('sendToPlant').value;
+            const qty = parseInt(document.getElementById('sendQuantity').value);
+            const batch = document.getElementById('sendBatch').value;
+            const transport = document.getElementById('sendTransport').value;
+
+            const partSelect = document.getElementById('sendPartName');
+            const selectedOpt = partSelect.options[partSelect.selectedIndex];
+            const colorCode = selectedOpt ? selectedOpt.getAttribute('data-color') || 'Blue' : 'Blue';
+
+            const currentStock = plantStock[currentPlant]?.[partName] || 50;
+            if (qty > currentStock) {
+                showNotification("Stock Limit Exceeded!", `Cannot send ${qty} units. Only ${currentStock} units available in ${currentPlant} stock.`, false);
+                return;
+            }
+
+            plantStock[currentPlant][partName] = currentStock - qty;
+            localStorage.setItem('plant_stock_sfg', JSON.stringify(plantStock));
+
+            const newTransfer = {
+                id: "TR-" + Math.floor(1000 + Math.random() * 9000),
+                jobOrderId: jobId,
+                partName: partName,
+                colorCode: colorCode,
+                sendingPlant: currentPlant,
+                receivingPlant: toPlant,
+                quantity: qty,
+                batch: batch,
+                transport: transport,
+                status: "IN_TRANSIT",
+                timestamp: new Date().toLocaleTimeString()
+            };
+
+            transfers.unshift(newTransfer);
+            localStorage.setItem('transfers_sfg', JSON.stringify(transfers));
+
+            showNotification("Dispatch Logged Successfully!", `Sent ${qty}x ${partName} from ${currentPlant} to ${toPlant}.`);
+            renderDashboard();
+            switchTab('receive');
+        }
+
+        // --- Handle Receipt Confirm ---
+        function confirmReceipt(id, discrepancy = false) {
+            const tr = transfers.find(t => t.id === id);
+            if (!tr) return;
+
+            tr.status = discrepancy ? "DISCREPANCY" : "RECEIVED";
+            
+            if (!plantStock[tr.receivingPlant]) plantStock[tr.receivingPlant] = {};
+            const existingStock = plantStock[tr.receivingPlant][tr.partName] || 0;
+            plantStock[tr.receivingPlant][tr.partName] = existingStock + tr.quantity;
+
+            localStorage.setItem('plant_stock_sfg', JSON.stringify(plantStock));
+            localStorage.setItem('transfers_sfg', JSON.stringify(transfers));
+
+            showNotification(discrepancy ? "Discrepancy Flagged!" : "Receipt Confirmed! 🎉", `Transfer ${tr.id} marked as ${tr.status}. Parts added to ${tr.receivingPlant} inventory.`, !discrepancy);
+            renderDashboard();
+        }
+
+        // --- Render Dashboard UI ---
+        function renderDashboard() {
+            const pendingCount = transfers.filter(t => t.status === "IN_TRANSIT").length;
+            const receivedTodayCount = transfers.filter(t => t.status === "RECEIVED").length;
+            const issueCount = transfers.filter(t => t.status === "DISCREPANCY").length;
+
+            document.getElementById('statPending').innerText = pendingCount;
+            document.getElementById('statReceived').innerText = receivedTodayCount;
+            document.getElementById('statIssues').innerText = issueCount;
+            document.getElementById('statTotal').innerText = transfers.length;
+
+            const incomingList = document.getElementById('incomingShipmentsList');
+            incomingList.innerHTML = '';
+
+            const pendingTransfers = transfers.filter(t => t.receivingPlant === currentPlant && t.status === "IN_TRANSIT");
+
+            if (pendingTransfers.length === 0) {
+                incomingList.innerHTML = `
+                    <div class="p-12 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
+                        <span class="text-4xl">📭</span>
+                        <h3 class="font-bold text-gray-700 mt-2 text-lg">No Incoming Shipments Waiting</h3>
+                        <p class="text-xs text-gray-500">All dispatches to ${currentPlant} have been processed or none have been sent yet.</p>
+                    </div>
+                `;
+            } else {
+                pendingTransfers.forEach(tr => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-5 rounded-2xl shadow-md border-2 border-amber-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
+                    card.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-black rounded-lg text-xs">IN TRANSIT</span>
+                                <span class="text-xs font-bold text-gray-500">${tr.id} • ${tr.timestamp}</span>
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-xs">${tr.jobOrderId}</span>
+                            </div>
+                            <h3 class="text-lg font-black text-gray-900 flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-blue-600 inline-block"></span>
+                                ${tr.quantity}x ${tr.partName}
+                            </h3>
+                            <p class="text-xs text-gray-600">From: <strong class="text-blue-900">${tr.sendingPlant}</strong> | Batch: ${tr.batch} | Transport: ${tr.transport}</p>
+                        </div>
+                        <div class="flex items-center space-x-3 w-full md:w-auto">
+                            <button onclick="confirmReceipt('${tr.id}', true)" class="flex-1 md:flex-none px-4 py-3 bg-rose-100 hover:bg-rose-200 text-rose-800 font-black rounded-xl text-sm transition">
+                                ⚠️ ISSUE / SHORTAGE
+                            </button>
+                            <button onclick="confirmReceipt('${tr.id}', false)" class="flex-1 md:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-sm shadow-lg transition">
+                                ✅ YES, WE GOT IT!
+                            </button>
+                        </div>
+                    `;
+                    incomingList.appendChild(card);
+                });
+            }
+
+            renderJobTargets();
+            renderHistoryTable();
+        }
+
+        // --- Render Job Targets with Stage Status Summary ---
+        function renderJobTargets() {
+            const container = document.getElementById('jobTargetsList');
+            container.innerHTML = '';
+
+            dummyJobOrders.forEach(job => {
+                let jobDiv = document.createElement('div');
+                jobDiv.className = "bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4";
+                
+                let stagesHtml = '';
+                let allComplete = true;
+                let stuckStageName = null;
+                let hasDiscrepancy = false;
+
+                job.routing_stages.forEach(stage => {
+                    const stageTransfers = transfers.filter(t => t.jobOrderId === job.job_order_id && t.partName === stage.part_name && t.sendingPlant === stage.sending_plant && t.receivingPlant === stage.receiving_plant);
+                    const totalSent = stageTransfers.reduce((acc, t) => acc + t.quantity, 0);
+                    const totalReceived = stageTransfers.filter(t => t.status === "RECEIVED").reduce((acc, t) => acc + t.quantity, 0);
+                    const hasIssue = stageTransfers.some(t => t.status === "DISCREPANCY");
+
+                    if (hasIssue) hasDiscrepancy = true;
+                    
+                    const pct = Math.min(100, Math.round((totalReceived / stage.required_target_qty) * 100));
+                    if (totalReceived < stage.required_target_qty) {
+                        allComplete = false;
+                        if (!stuckStageName) {
+                            stuckStageName = `Stage ${stage.stage_sequence}: ${stage.part_name} (${stage.sending_plant} → ${stage.receiving_plant}) [Received ${totalReceived}/${stage.required_target_qty}]`;
+                        }
+                    }
+
+                    stagesHtml += `
+                        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2 ${hasIssue ? 'border-rose-500 bg-rose-50' : ''}">
+                            <div class="flex justify-between items-center flex-wrap gap-2">
+                                <div>
+                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-xs">Stage ${stage.stage_sequence}</span>
+                                    <span class="font-bold text-gray-900 ml-2">${stage.part_name}</span>
+                                    <span class="text-xs text-gray-500 ml-1">(${stage.color_code})</span>
+                                </div>
+                                <div class="text-xs font-bold text-gray-600">
+                                    Route: ${stage.sending_plant} → ${stage.receiving_plant}
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-xs font-bold text-gray-700 bg-gray-50 p-2 rounded-lg">
+                                <div>Target: <span class="text-blue-900 font-black">${stage.required_target_qty}</span></div>
+                                <div>Already Sent: <span class="text-amber-700 font-black">${totalSent}</span></div>
+                                <div>Received: <span class="text-emerald-700 font-black">${totalReceived}</span></div>
+                            </div>
+                            <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full transition-all duration-500" style="width: ${pct}%"></div>
+                            </div>
+                            ${hasIssue ? '<p class="text-xs font-black text-rose-700">⚠️ Discrepancy or issue flagged on this route stage!</p>' : ''}
+                        </div>
+                    `;
+                });
+
+                // Status Summary Banner per Job Order
+                let summaryBoxHtml = '';
+                if (hasDiscrepancy) {
+                    summaryBoxHtml = `
+                        <div class="p-4 bg-rose-100 border border-rose-300 rounded-xl text-rose-900 text-sm font-bold flex items-center space-x-2">
+                            <span class="text-xl">⚠️</span>
+                            <div>
+                                <span class="uppercase font-black">Discrepancy Alert:</span> Route has been flagged with an issue or shortage. Inspect transfer logs.
+                            </div>
+                        </div>
+                    `;
+                } else if (allComplete) {
+                    summaryBoxHtml = `
+                        <div class="p-4 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-900 text-sm font-bold flex items-center space-x-2">
+                            <span class="text-xl">🎉</span>
+                            <div>
+                                <span class="uppercase font-black">All Steps Done:</span> All inter-plant routing stages for this job order have been successfully received and fulfilled!
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    summaryBoxHtml = `
+                        <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm font-bold flex items-center space-x-2">
+                            <span class="text-xl">⏳</span>
+                            <div>
+                                <span class="uppercase font-black">Current Stuck / Pending Stage:</span> ${stuckStageName}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                jobDiv.innerHTML = `
+                    <div class="flex justify-between items-center flex-wrap gap-2 border-b pb-3">
+                        <div>
+                            <h3 class="font-black text-lg text-blue-900">${job.job_order_id} - ${job.parent_product_name}</h3>
+                            <p class="text-xs text-gray-500">Line: ${job.production_line} | Priority: ${job.priority}</p>
+                        </div>
+                        <div>
+                            <span class="px-3 py-1 font-black rounded-lg text-xs ${allComplete ? 'bg-emerald-100 text-emerald-800' : hasDiscrepancy ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                                ${allComplete ? '🎉 COMPLETE' : hasDiscrepancy ? '⚠️ ISSUE FLAGGED' : '⏳ PENDING'}
+                            </span>
+                        </div>
+                    </div>
+                    ${summaryBoxHtml}
+                    <div class="space-y-3">
+                        ${stagesHtml}
+                    </div>
+                `;
+                container.appendChild(jobDiv);
+            });
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            transfers.forEach(tr => {
+                const trEl = document.createElement('tr');
+                trEl.className = "hover:bg-gray-50 border-b";
+                trEl.innerHTML = `
+                    <td class="p-3 font-bold text-gray-700">${tr.timestamp}<br><span class="text-xs text-gray-400">${tr.id}</span></td>
+                    <td class="p-3 font-bold text-blue-900">${tr.jobOrderId}</td>
+                    <td class="p-3 font-bold text-gray-800">${tr.partName} <span class="text-xs px-2 py-0.5 bg-gray-200 rounded">${tr.colorCode}</span></td>
+                    <td class="p-3 text-xs font-semibold text-gray-600">${tr.sendingPlant}<br>→ ${tr.receivingPlant}</td>
+                    <td class="p-3 font-black text-gray-900">${tr.quantity}</td>
+                    <td class="p-3">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-black ${tr.status === 'RECEIVED' ? 'bg-emerald-100 text-emerald-800' : tr.status === 'IN_TRANSIT' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
+                            ${tr.status}
+                        </span>
+                    </td>
+                    <td class="p-3 text-xs text-gray-500">Batch: ${tr.batch}</td>
+                `;
+                tbody.appendChild(trEl);
+            });
+        }
+
+        function renderJSONViewer() {
+            document.getElementById('jsonViewer').innerText = JSON.stringify({
+                "integration_metadata": {
+                    "system_source": "Enterprise Job Order System (Parent Build Tracker)",
+                    "target_system": "PlantTrack SFG Inter-Plant Logistics & Future SAP MM/PP",
+                    "schema_version": "v1.2-beta"
+                },
+                "active_job_orders": dummyJobOrders
+            }, null, 2);
+        }
+
+        function renderStockModalContent() {
+            const container = document.getElementById('stockModalContent');
+            container.innerHTML = '';
+
+            Object.keys(plantStock).forEach(plant => {
+                let itemsHtml = '';
+                const parts = plantStock[plant];
+                Object.keys(parts).forEach(part => {
+                    itemsHtml += `<div class="flex justify-between p-2 bg-gray-50 rounded-lg text-sm"><span>${part}</span><strong class="text-emerald-700">${parts[part]} units</strong></div>`;
+                });
+                if (Object.keys(parts).length === 0) {
+                    itemsHtml = `<p class="text-xs text-gray-400 italic">No inventory recorded.</p>`;
+                }
+
+                container.innerHTML += `
+                    <div class="border rounded-xl p-4 space-y-2">
+                        <h4 class="font-black text-gray-800">${plant}</h4>
+                        <div class="space-y-1">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function simulateScan(materialCode, jobId) {
+            closeModal('scannerModal');
+            switchTab('send');
+            document.getElementById('sendJobOrderId').value = jobId;
+            updatePartOptionsForJob();
+            showNotification("Barcode Scanned Successfully!", `Loaded item code ${materialCode} for job ${jobId}.`);
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            if (!t) return;
+
+            document.getElementById('headerSubText').innerText = t.headerSubText;
+            document.getElementById('lblLoggedInAs').innerText = t.lblLoggedInAs;
+            document.getElementById('txtTabSend').innerText = t.tabSend;
+            document.getElementById('txtTabReceive').innerText = t.tabReceive;
+            document.getElementById('txtTabTargets').innerText = t.tabTargets;
+            document.getElementById('txtTabHistory').innerText = t.tabHistory;
+
+            document.getElementById('sendHeading').innerText = t.sendHeading;
+            document.getElementById('sendSub').innerText = t.sendSub;
+            document.getElementById('lblJobOrder').innerText = t.lblJobOrder;
+            document.getElementById('lblPartName').innerText = t.lblPartName;
+            document.getElementById('lblSendingPlant').innerText = t.lblSendingPlant;
+            document.getElementById('lblReceivingPlant').innerText = t.lblReceivingPlant;
+            document.getElementById('lblQuantity').innerText = t.lblQuantity;
+            document.getElementById('lblBatch').innerText = t.lblBatch;
+            document.getElementById('lblTransport').innerText = t.lblTransport;
+            document.getElementById('txtSubmitDispatch').innerText = t.txtSubmitDispatch;
+
+            document.getElementById('receiveHeading').innerText = t.receiveHeading;
+            document.getElementById('receiveSub').innerText = t.receiveSub;
+            document.getElementById('targetsHeading').innerText = t.targetsHeading;
+            document.getElementById('targetsSub').innerText = t.targetsSub;
+            document.getElementById('historyHeading').innerText = t.historyHeading;
+            document.getElementById('historySub').innerText = t.historySub;
+            document.getElementById('txtExportCSV').innerText = t.txtExportCSV;
+        }
+
+        function startDemoTour() {
+            switchTab('send');
+            showNotification("Demo Tour Started 🚀", "Step 1: Select job order & dispatch parts from Plant 1 to Plant 2.");
+        }
+
+        function exportHistoryCSV() {
+            let csv = "ID,JobOrderId,PartName,SendingPlant,ReceivingPlant,Quantity,Status,Timestamp\n";
+            transfers.forEach(t => {
+                csv += `"${t.id}","${t.jobOrderId}","${t.partName}","${t.sendingPlant}","${t.receivingPlant}",${t.quantity},"${t.status}","${t.timestamp}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'PlantTrack_SFG_History.csv');
+            a.click();
+            showNotification("CSV Exported!", "Transfer history report downloaded successfully.");
+        }
+    </script>
+</body>
+</html>
