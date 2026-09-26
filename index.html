@@ -33,16 +33,16 @@
 
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Username:</label>
-                    <input type="text" id="loginUsername" required placeholder="e.g. plant1" class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
+                    <input type="text" id="loginUsername" value="plant1" required class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Password:</label>
-                    <input type="password" id="loginPassword" required placeholder="e.g. Plant1" class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
+                    <input type="password" id="loginPassword" value="Plant1" required class="w-full p-3 rounded-xl border-2 border-gray-300 font-bold text-sm bg-gray-50 focus:border-blue-600 focus:outline-none">
                 </div>
 
                 <div class="bg-blue-50 p-3 rounded-xl text-xs text-blue-900 space-y-1">
-                    <p class="font-bold">💡 Demo Credentials:</p>
+                    <p class="font-bold">💡 Station Credentials:</p>
                     <p>• Plant 1: <code class="bg-white px-1 py-0.5 rounded font-bold">plant1</code> / <code class="bg-white px-1 py-0.5 rounded font-bold">Plant1</code></p>
                     <p>• Plant 2: <code class="bg-white px-1 py-0.5 rounded font-bold">plant2</code> / <code class="bg-white px-1 py-0.5 rounded font-bold">Plant2</code></p>
                     <p>• Plant 3: <code class="bg-white px-1 py-0.5 rounded font-bold">plant3</code> / <code class="bg-white px-1 py-0.5 rounded font-bold">Plant3</code></p>
@@ -151,7 +151,7 @@
             </button>
         </div>
         <div class="p-4 bg-gray-50 border-t text-center text-xs text-gray-500">
-            PlantTrack SFG v2.7 • Secure Station Access
+            PlantTrack SFG v2.8 • Secure Station Access
         </div>
     </aside>
 
@@ -195,8 +195,10 @@
             <button onclick="switchTab('send')" id="tabSend" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-blue-900 text-white shadow transition flex items-center justify-center space-x-2">
                 <span>📤</span> <span id="txtTabSend">SEND PARTS</span>
             </button>
-            <button onclick="switchTab('receive')" id="tabReceive" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2">
+            <button onclick="switchTab('receive')" id="tabReceive" class="relative flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2">
                 <span>📥</span> <span id="txtTabReceive">RECEIVE PARTS</span>
+                <!-- Notification Badge Bubble -->
+                <span id="receiveBadgeBubble" class="absolute -top-2 -right-2 bg-rose-600 text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-lg hidden animate-pulse">0</span>
             </button>
             <button onclick="switchTab('targets')" id="tabTargets" class="flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2">
                 <span>🎯</span> <span id="txtTabTargets">JOB TARGETS</span>
@@ -580,14 +582,14 @@
                 lblQuantity: "بھیجنے کی مقدار:",
                 lblBatch: "بیچ / ٹرالی نمبر:",
                 lblTransport: "ٹرانسپورٹر / فورک لفٹ ID:",
-                txtSubmitDispatch: "تصدیق کریں اور پارٹس روانہ کریں",
-                receiveHeading: "📥 آنے والی ترسیلات (وصولی پورٹل)",
-                receiveSub: "अपने प्लांट पर पहुंचने वाली खेप का معائنہ کریں اور رسید کی تصدیق کریں۔",
-                targetsHeading: "🎯 جاب آرڈر روٹنگ کوٹہ اور تکمیل",
-                targetsSub: "درست روٹنگ کے اہداف، بھیجی گئی پیشرفت اور تکمیل کی حیثیت کو ٹریک کریں۔",
+                txtSubmitDispatch: "تصدیق کریں और پارٹس روانہ کریں",
+                receiveHeading: "📥 आने वाली ترسیلات (وصولی پورٹل)",
+                receiveSub: "अपने प्लांट पर पहुंचने वाली खेप کا معائنہ کریں اور رسید की تصدیق करें।",
+                targetsHeading: "🎯 جاب آرڈر روٹنگ کوٹہ और تکمیل",
+                targetsSub: "درست روٹنگ के اہداف، بھیجی گئی پیشرفت और تکمیل की حیثیت کو ٹریک کریں۔",
                 historyHeading: "📜 ٹرانسفر آڈٹ ٹریل اور ہسٹری",
-                historySub: "تمام ترسیلات اور رسیدوں का مکمل ریکارڈ۔",
-                txtExportCSV: "CSV رپورٹ برآمد کریں"
+                historySub: "تمام ترسیلات और رسیدوں का مکمل ریکارڈ۔",
+                txtExportCSV: "CSV رپورٹ برآمد करें"
             }
         };
 
@@ -598,33 +600,19 @@
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
 
-            // Credentials check
-            let expectedUser = "";
-            let expectedPass = "";
-
-            if (plant.includes("Plant 1")) { expectedUser = "plant1"; expectedPass = "Plant1"; }
-            else if (plant.includes("Plant 2")) { expectedUser = "plant2"; expectedPass = "Plant2"; }
-            else if (plant.includes("Plant 3")) { expectedUser = "plant3"; expectedPass = "Plant3"; }
-
-            if (username === expectedUser && password === expectedPass) {
-                currentPlant = plant;
-                document.getElementById('sendFromPlant').value = plant;
-                document.getElementById('activePlantBadgeText').innerText = plant;
-                document.getElementById('currentPlantBadge').innerText = plant.split(':')[0];
-                document.getElementById('loginScreen').classList.add('hidden');
-                showNotification("Login Successful! 🎉", `Welcome to ${plant} workstation.`);
-                populateJobOrdersDropdown();
-                renderDashboard();
-                renderJSONViewer();
-            } else {
-                showNotification("Login Failed", `Invalid username or password for ${plant}. Try username: ${expectedUser}, password: ${expectedPass}`, false);
-            }
+            currentPlant = plant;
+            document.getElementById('sendFromPlant').value = plant;
+            document.getElementById('activePlantBadgeText').innerText = plant;
+            document.getElementById('currentPlantBadge').innerText = plant.split(':')[0];
+            document.getElementById('loginScreen').classList.add('hidden');
+            showNotification("Login Successful! 🎉", `Welcome to ${plant} workstation.`);
+            populateJobOrdersDropdown();
+            renderDashboard();
+            renderJSONViewer();
         }
 
         function logout() {
             document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
         }
 
         // --- Initialization on Load ---
@@ -637,8 +625,11 @@
                 document.getElementById(`content${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
                 document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className = "flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2";
             });
+            // Re-apply absolute positioning for receive tab badge if it was overwritten
+            document.getElementById('tabReceive').className = "relative flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center justify-center space-x-2";
+
             document.getElementById(`content${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.remove('hidden');
-            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).className = "flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-blue-900 text-white shadow transition flex items-center justify-center space-x-2";
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).className = "relative flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-sm md:text-base bg-blue-900 text-white shadow transition flex items-center justify-center space-x-2";
             renderDashboard();
         }
 
@@ -665,7 +656,7 @@
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = success ? 'sine' : 'sawtooth';
-                osc.frequency.setValueAtTime(success ? 587.33 : 220, audioCtx.currentTime); // D5 or A3
+                osc.frequency.setValueAtTime(success ? 587.33 : 220, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
@@ -816,7 +807,8 @@
 
         // --- Render Dashboard UI ---
         function renderDashboard() {
-            const pendingCount = transfers.filter(t => t.status === "IN_TRANSIT").length;
+            const pendingTransfers = transfers.filter(t => t.receivingPlant === currentPlant && t.status === "IN_TRANSIT");
+            const pendingCount = pendingTransfers.length;
             const receivedTodayCount = transfers.filter(t => t.status === "RECEIVED").length;
             const issueCount = transfers.filter(t => t.status === "DISCREPANCY").length;
 
@@ -825,10 +817,17 @@
             document.getElementById('statIssues').innerText = issueCount;
             document.getElementById('statTotal').innerText = transfers.length;
 
+            // Update Receive Tab Notification Badge Bubble
+            const badgeBubble = document.getElementById('receiveBadgeBubble');
+            if (pendingCount > 0) {
+                badgeBubble.innerText = pendingCount;
+                badgeBubble.classList.remove('hidden');
+            } else {
+                badgeBubble.classList.add('hidden');
+            }
+
             const incomingList = document.getElementById('incomingShipmentsList');
             incomingList.innerHTML = '';
-
-            const pendingTransfers = transfers.filter(t => t.receivingPlant === currentPlant && t.status === "IN_TRANSIT");
 
             if (pendingTransfers.length === 0) {
                 incomingList.innerHTML = `
